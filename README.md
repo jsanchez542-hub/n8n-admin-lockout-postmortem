@@ -55,7 +55,7 @@ The working rule was to avoid changing production on a guess. Every hypothesis h
 
 ## 4. Hypotheses ruled out
 
-Recording the dead ends matters as much as recording the fix. Each was eliminated with evidence rather than intuition.
+The dead ends are recorded too, each with the evidence that ruled it out.
 
 | Hypothesis | How it was ruled out |
 |---|---|
@@ -96,7 +96,7 @@ The reason this took so long to isolate: the failure presented as an *authentica
 
 ## 6. Resolution
 
-Rather than patching the single column that unblocked the symptom, every table was scanned programmatically for references to the deleted user id and reassigned.
+The fix did not stop at the single column that unblocked the symptom. Every table was scanned programmatically for references to the deleted user id, and each one was reassigned.
 
 | Table and column | Rows corrected |
 |---|---|
@@ -154,7 +154,7 @@ If `n8n user-management:reset` leaves you unable to reach the setup wizard, the 
 
 ## 9. Lessons
 
-**An early error message contained the answer.** The failing second reset stated `matching: { "type": "personal", "creatorId": ... }` in plain text. It was read as an obstacle to work around rather than as a description of the data model. Tool error messages describe internal logic and should be read as documentation.
+**An early error message contained the answer.** The failing second reset stated `matching: { "type": "personal", "creatorId": ... }` in plain text. It was read as an obstacle to work around. It was describing the data model. Tool error messages describe internal logic and should be read as documentation.
 
 **Deleting is worse than correcting.** Removing the whole user row was more destructive than the situation required and caused the referential damage. Clearing the specific 2FA fields blocking the official reset would have been sufficient.
 
@@ -162,7 +162,7 @@ If `n8n user-management:reset` leaves you unable to reach the setup wizard, the 
 
 **The server has blind spots.** Logs, database and deployed source were all exhausted without finding the cause. One look at the browser console found it in seconds. When the backend is verified healthy, move to the client early.
 
-**Separate verified from assumed.** Statements such as "the workflows are intact" were backed by real counts at every step rather than assumption, which made it possible to keep the blast radius clear while the rest of the diagnosis was still uncertain.
+**Separate verified from assumed.** Statements such as "the workflows are intact" were backed by real counts at every step, which made it possible to keep the blast radius clear while the rest of the diagnosis was still uncertain.
 
 ---
 

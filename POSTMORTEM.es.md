@@ -55,7 +55,7 @@ La regla de trabajo fue no modificar producción por intuición. Cada hipótesis
 
 ## 4. Hipótesis descartadas
 
-Documentar los callejones sin salida importa tanto como documentar la solución. Cada uno se eliminó con evidencia, no por intuición.
+También se documentan los callejones sin salida, cada uno con la evidencia que lo descartó.
 
 | Hipótesis | Cómo se descartó |
 |---|---|
@@ -96,7 +96,7 @@ El motivo de que costara tanto aislarlo: el fallo se presentaba como un problema
 
 ## 6. Resolución
 
-En lugar de parchear la única columna que desbloqueaba el síntoma, se recorrieron todas las tablas de forma programática buscando referencias al id del usuario eliminado, y se reasignaron.
+El arreglo no se quedó en la única columna que provocaba el síntoma. Se recorrieron todas las tablas de forma programática buscando referencias al id del usuario eliminado, y se reasignaron.
 
 | Tabla y columna | Filas corregidas |
 |---|---|
@@ -146,7 +146,7 @@ Comprobaciones, en orden:
 3. Compara `creatorId` con el id de la cuenta con la que realmente inicias sesión: `SELECT id, email FROM user;`
 4. Si no coinciden, esa es la causa
 
-Antes de reparar, detén n8n, y recorre todas las tablas buscando el id de usuario obsoleto en lugar de corregir solo la que desbloquea el síntoma.
+Antes de reparar, detén n8n y recorre todas las tablas buscando el id de usuario obsoleto; no corrijas solo la que provoca el síntoma.
 
 Si `n8n user-management:reset` te deja sin poder llegar al asistente de configuración, la causa probable es el 2FA residual en la fila existente. Limpia únicamente `mfaEnabled`, `mfaSecret` y `mfaRecoveryCodes`. No elimines la fila de usuario, que es exactamente lo que provocó el daño referencial descrito aquí.
 
@@ -154,7 +154,7 @@ Si `n8n user-management:reset` te deja sin poder llegar al asistente de configur
 
 ## 9. Lecciones
 
-**Un mensaje de error temprano contenía la respuesta.** El segundo reset fallido indicaba literalmente `matching: { "type": "personal", "creatorId": ... }`. Se leyó como un obstáculo a sortear en vez de como una descripción del modelo de datos. Los mensajes de error de las herramientas describen su lógica interna y deben leerse como documentación.
+**Un mensaje de error temprano contenía la respuesta.** El segundo reset fallido indicaba literalmente `matching: { "type": "personal", "creatorId": ... }`. Se leyó como un obstáculo a sortear. Estaba describiendo el modelo de datos. Los mensajes de error de las herramientas describen su lógica interna y deben leerse como documentación.
 
 **Eliminar es peor que corregir.** Borrar la fila de usuario completa fue más destructivo de lo que la situación requería y causó el daño referencial. Limpiar los campos concretos de 2FA que bloqueaban el reset oficial habría bastado.
 
@@ -162,7 +162,7 @@ Si `n8n user-management:reset` te deja sin poder llegar al asistente de configur
 
 **El servidor tiene puntos ciegos.** Se agotaron logs, base de datos y código fuente desplegado sin encontrar la causa. Un vistazo a la consola del navegador la localizó en segundos. Cuando el backend está verificado como sano, conviene pasar al cliente pronto.
 
-**Distinguir lo verificado de lo asumido.** Afirmaciones como "los workflows están intactos" se sostuvieron con conteos reales en cada paso en lugar de suposiciones, lo que permitió acotar el alcance real del daño mientras el resto del diagnóstico seguía siendo incierto.
+**Distinguir lo verificado de lo asumido.** Afirmaciones como "los workflows están intactos" se sostuvieron con conteos reales en cada paso, lo que permitió acotar el alcance real del daño mientras el resto del diagnóstico seguía siendo incierto.
 
 ---
 
