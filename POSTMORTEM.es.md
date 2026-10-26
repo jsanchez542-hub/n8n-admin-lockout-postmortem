@@ -1,6 +1,6 @@
-# Post-mortem: pérdida de acceso al panel de n8n tras recrear la cuenta de administrador
+# Post mortem: pérdida de acceso al panel de n8n tras recrear la cuenta de administrador
 
-Análisis de un incidente en producción. Una instancia self-hosted de n8n quedó inaccesible desde el navegador tras reconstruir la cuenta propietaria, mientras la API, la base de datos y todos los workflows programados seguían funcionando con normalidad.
+Análisis de un incidente en producción. Una instancia de n8n en un servidor propio quedó inaccesible desde el navegador tras reconstruir la cuenta propietaria, mientras la API, la base de datos y todos los workflows programados seguían funcionando con normalidad.
 
 Se publica porque el modo de fallo es engañoso (se presenta como un problema de autenticación cuando en realidad es de integridad referencial) y porque el error que finalmente lo identificó no está documentado en ningún sitio que haya podido encontrar.
 
@@ -8,7 +8,7 @@ Se publica porque el modo de fallo es engañoso (se presenta como un problema de
 **Tiempo hasta la resolución:** aproximadamente 1 hora 20 minutos
 **Pérdida de datos:** ninguna. Los 24 workflows, sus credenciales y sus ejecuciones programadas siguieron operando durante todo el incidente.
 
-**Entorno:** n8n self-hosted de la línea 2.33, Docker Swarm, Traefik como reverse proxy, SQLite como backend.
+**Entorno:** n8n 2.33.x en un servidor propio, Docker Swarm, Traefik como reverse proxy, SQLite como backend.
 
 ---
 

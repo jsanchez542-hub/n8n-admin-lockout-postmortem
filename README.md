@@ -1,6 +1,6 @@
-# Post-mortem: n8n admin lockout after an owner account reset
+# Postmortem: n8n admin lockout after an owner account reset
 
-A production incident write-up. Self-hosted n8n became unreachable from the browser after the instance owner account was rebuilt, while the API, the database and every scheduled workflow kept running normally.
+A report on a production incident. An n8n instance on a private server became unreachable from the browser after its owner account was rebuilt, while the API, the database and every scheduled workflow kept running normally.
 
 Published because the failure mode is misleading (it presents as an authentication problem but is a referential integrity problem) and the error that finally identified it is not documented anywhere I could find.
 
@@ -8,7 +8,7 @@ Published because the failure mode is misleading (it presents as an authenticati
 **Time to resolution:** approximately 1 hour 20 minutes
 **Data loss:** none. All 24 workflows, their credentials and their scheduled executions kept running throughout.
 
-**Environment:** self-hosted n8n on the 2.33 line, Docker Swarm, Traefik reverse proxy, SQLite backend.
+**Environment:** n8n 2.33.x on a private server, Docker Swarm, Traefik reverse proxy, SQLite backend.
 
 ---
 
@@ -16,9 +16,9 @@ Published because the failure mode is misleading (it presents as an authenticati
 
 What started as a forgotten password escalated into a frontend that would authenticate successfully and then bounce straight back to the login screen, producing no authentication errors of any kind on the server.
 
-The root cause: **n8n resolves a user's personal project through the `project.creatorId` column, not through the `project_relation` table.** After the owner account was rebuilt, `project_relation` was repaired but `creatorId` still pointed at the deleted user. The endpoint `GET /rest/projects/personal` returned 404, the editor's initialisation threw inside a `Promise.all`, and the router redirected back to the sign-in page.
+The root cause: **n8n resolves a user's personal project through the `project.creatorId` column, not through the `project_relation` table.** After the owner account was rebuilt, `project_relation` was repaired but `creatorId` still pointed at the deleted user. The endpoint `GET /rest/projects/personal` returned 404, the editor's initialisation threw inside a `Promise.all`, and the router redirected back to the login page.
 
-Because authentication itself never failed, server-side logs showed nothing useful. That single misleading signal accounted for most of the resolution time.
+Because authentication itself never failed, the server logs showed nothing useful. That single misleading signal accounted for most of the resolution time.
 
 ---
 
@@ -30,7 +30,7 @@ Because authentication itself never failed, server-side logs showed nothing usef
 | 11:50 | Unrelated real bug found and fixed: `N8N_PROXY_HOPS` was unset, breaking the login rate limiter behind the proxy |
 | 12:00 | No SMTP configured, so email password recovery is unavailable. CLI reset is the only path |
 | 12:06 | `n8n user-management:reset` runs but only partially succeeds. It leaves a residual user row with 2FA still enabled, so the setup wizard never appears |
-| 12:10 | Over-aggressive manual repair: the entire user row is deleted. This breaks the project to user link |
+| 12:10 | A manual repair that went too far: the entire user row is deleted. This breaks the project to user link |
 | 12:20 | A second reset fails with `Could not find any entity of type "Project" matching: { "type": "personal", "creatorId": ... }`. This message described the root cause and was not followed up at the time |
 | 12:25 | `project_relation.userId` repaired. Setup wizard appears, new owner account created |
 | 12:29 | Account created successfully, but the editor will not load. Login succeeds, then returns to the login screen |
@@ -45,7 +45,7 @@ Because authentication itself never failed, server-side logs showed nothing usef
 The working rule was to avoid changing production on a guess. Every hypothesis had to be supported by observable evidence before any action was taken.
 
 - Container logs read with timestamps and correlated against the exact moments of real login attempts
-- Read-only SQLite queries (`sqlite3.connect('file:...?mode=ro', uri=True)`) to inspect state without risk to a live database
+- SQLite queries that only read the database (`sqlite3.connect('file:...?mode=ro', uri=True)`) to inspect state without risk to a live database
 - Reading the deployed source itself (`auth.service.js` inside the container) rather than relying on documentation or forum posts
 - Reproducing the full login cycle with `curl`, isolating one variable at a time
 - Temporary debug logging to capture one specific user attempt end to end
@@ -134,7 +134,7 @@ Unrelated to the root cause, but discovered and corrected during the investigati
 
 Symptoms that match this incident:
 
-- Login appears to succeed, then the page returns to the sign-in screen
+- Login appears to succeed, then the page returns to the login screen
 - Server logs show no authentication errors
 - The URL accumulates an encoded redirect such as `signin?redirect=%252Fhome%252Fworkflows`
 - Browser console shows `Could not find a personal project for this user`
