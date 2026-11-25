@@ -1,12 +1,12 @@
 # Postmortem: n8n admin lockout after an owner account reset
 
-A report on a production incident. An n8n instance on a private server became unreachable from the browser after its owner account was rebuilt, while the API, the database and every scheduled workflow kept running normally.
+A report on a production incident. An n8n instance on a private server became unreachable from the browser after its owner account was rebuilt. The database and the scheduled executions kept running, but the workflows that call the n8n API failed silently, because their API keys still pointed to the deleted owner.
 
 Published because the failure mode is misleading (it presents as an authentication problem but is a referential integrity problem) and the error that finally identified it is not documented anywhere I could find.
 
-**Incident date:** 15 August 2026
-**Time to resolution:** approximately 1 hour 20 minutes
-**Data loss:** none. All 24 workflows, their credentials and their scheduled executions kept running throughout.
+- **Incident date:** 15 August 2026
+- **Time to resolution:** about 1 hour 45 minutes, from 11:45 to 13:30 UTC
+- **Data loss:** none. All 24 workflows and their credentials were intact, and the scheduled executions kept running throughout. The two API keys tied to the deleted user stopped working from 12:10 until the fix at 13:30.
 
 **Environment:** n8n 2.33.x on a private server, Docker Swarm, Traefik reverse proxy, SQLite backend.
 
@@ -65,10 +65,10 @@ The dead ends are recorded too, each with the evidence that ruled it out.
 | `browserId` validation failing | The `browserId check failed` warning appeared only in my own isolated curl test, never during a real user attempt |
 | Multiple instances splitting session state | Verified as a single replica, one running container |
 | Instance level 2FA enforcement rejecting the new account | No MFA setting in the `settings` table, no MFA environment variables |
-| Browser tracker blocking | Plausible, since it failed in two different browsers, but disproved by the actual console error |
+| Browser tracker blocking | Unlikely, since it failed the same way in two different browsers, and the actual console error ruled it out |
 | Incomplete onboarding hanging the survey modal | `settings` and `personalizationAnswers` were indeed NULL and were populated as a precaution, but this was not the cause |
 
-Three of these were reasonable and consistent with every symptom available at the time. None were correct. Progress only came from client side evidence.
+Three of these were reasonable and consistent with every symptom available at the time. None of them was the cause. Progress only came from client side evidence.
 
 ---
 
@@ -106,7 +106,7 @@ The fix did not stop at the single column that unblocked the symptom. Every tabl
 | `chat_hub_sessions.ownerId` | 1 |
 | **Total** | **726** |
 
-Correcting `user_api_keys` had a secondary benefit. It restored API keys used both by an external integration and by internal workflows that call the n8n API, all of which had been failing silently for hours.
+Correcting `user_api_keys` had a secondary benefit. It restored API keys used both by an external integration and by internal workflows that call the n8n API, all of which had been failing silently since the user row was deleted at 12:10.
 
 Verification after the fix:
 

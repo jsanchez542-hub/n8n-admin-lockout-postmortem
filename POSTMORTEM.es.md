@@ -1,12 +1,12 @@
 # Post mortem: pérdida de acceso al panel de n8n tras recrear la cuenta de administrador
 
-Análisis de un incidente en producción. Una instancia de n8n en un servidor propio quedó inaccesible desde el navegador tras reconstruir la cuenta propietaria, mientras la API, la base de datos y todos los workflows programados seguían funcionando con normalidad.
+Análisis de un incidente en producción. Una instancia de n8n en un servidor propio quedó inaccesible desde el navegador tras reconstruir la cuenta propietaria. La base de datos y las ejecuciones programadas siguieron funcionando, pero los workflows que llaman a la API de n8n fallaban en silencio, porque sus claves de API seguían apuntando al propietario borrado.
 
 Se publica porque el modo de fallo es engañoso (se presenta como un problema de autenticación cuando en realidad es de integridad referencial) y porque el error que finalmente lo identificó no está documentado en ningún sitio que haya podido encontrar.
 
-**Fecha del incidente:** 15 de agosto de 2026
-**Tiempo hasta la resolución:** aproximadamente 1 hora 20 minutos
-**Pérdida de datos:** ninguna. Los 24 workflows, sus credenciales y sus ejecuciones programadas siguieron operando durante todo el incidente.
+- **Fecha del incidente:** 15 de agosto de 2026
+- **Tiempo hasta la resolución:** aproximadamente 1 hora 45 minutos, de 11:45 a 13:30 UTC
+- **Pérdida de datos:** ninguna. Los 24 workflows y sus credenciales quedaron intactos, y las ejecuciones programadas siguieron durante todo el incidente. Las dos claves de API ligadas al usuario borrado dejaron de funcionar desde las 12:10 hasta la corrección de las 13:30.
 
 **Entorno:** n8n 2.33.x en un servidor propio, Docker Swarm, Traefik como reverse proxy, SQLite como backend.
 
@@ -65,10 +65,10 @@ También se documentan los callejones sin salida, cada uno con la evidencia que 
 | Validación de `browserId` fallando | El aviso `browserId check failed` apareció únicamente en mi propia prueba aislada con curl, nunca durante un intento real del usuario |
 | Múltiples instancias dividiendo el estado de sesión | Verificado: una sola réplica, un único contenedor en ejecución |
 | 2FA forzado a nivel de instancia rechazando la cuenta nueva | Sin ajuste de MFA en la tabla `settings`, sin variables de entorno de MFA |
-| Bloqueadores de rastreo del navegador | Plausible, ya que fallaba en dos navegadores distintos, pero desmentido por el error real de consola |
+| Bloqueadores de rastreo del navegador | Poco probable, porque fallaba igual en dos navegadores distintos, y el error real de consola lo descartó |
 | Onboarding incompleto colgando el modal de encuesta | `settings` y `personalizationAnswers` estaban efectivamente en NULL y se rellenaron por precaución, pero no era la causa |
 
-Tres de estas hipótesis eran razonables y coherentes con todos los síntomas disponibles en ese momento. Ninguna era correcta. El avance llegó únicamente con evidencia del lado del cliente.
+Tres de estas hipótesis eran razonables y coherentes con todos los síntomas disponibles en ese momento. Ninguna era la causa. El avance llegó únicamente con evidencia del lado del cliente.
 
 ---
 
@@ -106,7 +106,7 @@ El arreglo no se quedó en la única columna que provocaba el síntoma. Se recor
 | `chat_hub_sessions.ownerId` | 1 |
 | **Total** | **726** |
 
-Corregir `user_api_keys` tuvo un beneficio secundario: restauró las API keys usadas tanto por una integración externa como por workflows internos que llaman a la propia API de n8n, todos ellos fallando en silencio desde hacía horas.
+Corregir `user_api_keys` tuvo un beneficio secundario: restauró las API keys usadas tanto por una integración externa como por workflows internos que llaman a la propia API de n8n, todos ellos fallando en silencio desde que se borró la fila del usuario, a las 12:10.
 
 Verificación posterior:
 
